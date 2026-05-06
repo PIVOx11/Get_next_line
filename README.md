@@ -1,138 +1,143 @@
-*This project has been created as part of the 42 curriculum by \<login1\>[, \<login2\>[, \<login3\>[...]]]*
-
-# 🧠 Description
-
-**Libft** is your very first custom C library.  
-The goal of this project is to recreate a set of standard C library functions and extend them with additional utility functions.
-
-This project teaches:
-- Memory management in C
-- String manipulation
-- Low-level data handling
-- Writing reusable and modular code
-- Building and maintaining your own static library (`libft.a`)
-
-By the end, you will have your own toolbox of fundamental functions that you will reuse throughout your C journey.
+*This project has been created as part of the 42 curriculum by blidriss*
 
 ---
 
-# ⚙️ Instructions
+# 📖 Get Next Line
 
-## 📦 Compilation
+## 🧠 Description
 
-To build the library, simply run:
+**Get Next Line (GNL)** is a C project that implements a function capable of reading a file descriptor line by line.
 
-```bash
-make
-```
+The main idea is to repeatedly call a function that returns the next line from a file, including the `\n` character when present. This project introduces an important concept in C programming: **static variables**, which allow persistent state between function calls.
 
-This will generate the static library:
+### 🎯 Goal
 
-```
-libft.a
-```
-
-## 🧹 Cleaning
-
-```bash
-make clean   # removes object files
-make fclean  # removes object files + libft.a
-make re      # rebuild everything
-```
-
-## 🛠️ Compiler Flags
-
-The project is compiled using:
-
-```
--Wall -Wextra -Werror
-```
+- Read a file **line by line**
+- Handle different file descriptors (mandatory + bonus)
+- Manage memory correctly without leaks
+- Learn how buffered reading works internally
 
 ---
 
-# 📚 Library Content
+## ⚙️ Instructions
 
-Libft is divided into two main parts:
-
-## 🔹 Part 1 — Libc Reimplementation
-
-Recreation of standard C functions:
-
-**Character checks**
-- `ft_isalpha`
-- `ft_isdigit`
-- `ft_isalnum`
-- `ft_isascii`
-- `ft_isprint`
-
-**Strings & memory**
-- `ft_strlen`
-- `ft_memset`
-- `ft_bzero`
-- `ft_memcpy`
-- `ft_memmove`
-- `ft_strlcpy`
-- `ft_strlcat`
-
-**Searching & comparison**
-- `ft_strchr`
-- `ft_strrchr`
-- `ft_strncmp`
-- `ft_memchr`
-- `ft_memcmp`
-- `ft_strnstr`
-
-**Conversion**
-- `ft_toupper`
-- `ft_tolower`
-- `ft_atoi`
-
-**Dynamic allocation**
-- `ft_calloc`
-- `ft_strdup`
-
----
-
-## 🔹 Part 2 — Additional Utilities
-
-Useful helper functions for string processing and I/O:
-
-**String manipulation**
-- `ft_substr` → extract substring
-- `ft_strjoin` → concatenate strings
-- `ft_strtrim` → trim characters
-- `ft_split` → split string by delimiter
-- `ft_strmapi` → map function over string
-- `ft_striteri` → iterate with modification
-
-**Integer conversion**
-- `ft_itoa` → int to string
-
-**File descriptor output**
-- `ft_putchar_fd`
-- `ft_putstr_fd`
-- `ft_putendl_fd`
-- `ft_putnbr_fd`
-
----
-
-# 🚀 Usage Example
+### 🧩 Function Prototype
 
 ```c
-#include "libft.h"
-#include <stdio.h>
-
-int main(void)
-{
-    char *s = ft_strjoin("Hello ", "World");
-    printf("%s\n", s);
-    free(s);
-    return 0;
-}
+char *get_next_line(int fd);
 ```
 
-Compile with:
+### 📁 Files to submit
+
+- `get_next_line.c`
+- `get_next_line_utils.c`
+- `get_next_line.h`
+
+### 📥 External functions allowed
+
+- `read`
+- `malloc`
+- `free`
+
+### 🛠 Compilation
+
+Compile your project using:
 
 ```bash
-cc main.c libft.a
+cc -Wall -Wextra -Werror -D BUFFER_SIZE=42 *.c
 ```
+
+You can change `BUFFER_SIZE`:
+
+```bash
+-D BUFFER_SIZE=n
+```
+
+Example:
+
+```bash
+cc -Wall -Wextra -Werror -D BUFFER_SIZE=1 *.c
+cc -Wall -Wextra -Werror -D BUFFER_SIZE=9999 *.c
+```
+
+---
+
+## ▶️ Usage
+
+Example usage in a program:
+
+```c
+int fd = open("file.txt", O_RDONLY);
+char *line;
+
+while ((line = get_next_line(fd)) != NULL)
+{
+    printf("%s", line);
+    free(line);
+}
+close(fd);
+```
+
+---
+
+## 🧠 Algorithm Overview
+
+The implementation is based on a **buffered reading + stash (static memory)** approach.
+
+### 📌 Core idea
+
+Each call to `get_next_line()`:
+
+1. Reads data from the file using a buffer (`BUFFER_SIZE`)
+2. Stores leftover data in a **static variable** (stash)
+3. Searches for `\n` in the accumulated data
+4. Extracts one full line
+5. Keeps remaining data for the next call
+
+### 🧩 Why use a static variable?
+
+A static variable allows the function to **remember unread data between calls**, which is essential because:
+
+- File reading happens in chunks (`read`)
+- Lines may be split across multiple reads
+- We must preserve remaining characters after `\n`
+
+### ⚙️ Workflow
+
+**Read loop**
+- Read from `fd` into buffer
+- Append to stash
+
+**Line extraction**
+- Find `\n`
+- Split:
+  - Return left part (line)
+  - Keep right part (for next call)
+
+**Edge cases**
+- End of file → return last line without `\n`
+- Error → return `NULL`
+
+---
+
+## 🔀 Bonus Part
+
+The bonus implementation extends the project with:
+
+- Only **one static variable**
+- Support for **multiple file descriptors** simultaneously
+
+### 💡 Idea
+
+Instead of a single stash, a structure (or indexed storage) is used internally to track each `fd` independently.
+
+This allows:
+
+```
+fd1 → line 1
+fd2 → line 1
+fd1 → line 2
+fd3 → line 1
+```
+
+Without losing state between calls.
